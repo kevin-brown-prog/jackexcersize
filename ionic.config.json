@@ -1,0 +1,7 @@
+{
+  "name": "workout",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
