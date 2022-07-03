@@ -10,6 +10,9 @@ import {
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
+
+
+
 import { ellipse, square, triangle } from 'ionicons/icons';
 import Tab1 from './pages/Tab1';
 import Tab2 from './pages/Tab2';
@@ -36,13 +39,88 @@ import './theme/variables.css';
 
 setupIonicReact();
 
+function DoneChange(id :number, is_done:boolean){
+
+}
+function RepsChange(id:number, reps_update:number){
+
+}
+function WeightChanged(id:number, weight:number ){
+
+}
+
+var set1 = { set_id : 0,
+weight : 135,
+reps_or_duration : 5,
+done : false,
+is_time_based: false
+};
+
+var set2 = { set_id : 1,
+  weight : 135,
+  reps_or_duration : 5,
+  done : false,
+  is_time_based: false,
+ };
+
+ var set3 = { set_id : 2,
+  weight : 135,
+  reps_or_duration : 5,
+  done : false,
+  is_time_based: false,
+  };
+
+  var Exercise1 = {
+    name:"Bench Press",
+    sets :[set1, set2,set3]
+
+  }
+
+
+   set1 = { set_id : 3,
+    weight : 135,
+    reps_or_duration : 5,
+    done : false,
+    is_time_based: false
+    };
+    
+     set2 = { set_id : 4,
+      weight : 135,
+      reps_or_duration : 5,
+      done : false,
+      is_time_based: false,
+     };
+    
+      set3 = { set_id : 5,
+      weight : 135,
+      reps_or_duration : 5,
+      done : false,
+      is_time_based: false,
+      };
+
+
+
+  var Exercise2 = {
+    name:"Squats",
+    sets:[set1, set2, set3]
+  }
+
+  let ExerciseSession ={
+    name:"Monday session",
+    date:new Date(),
+    exercises : [Exercise1, Exercise2]
+  }
+
+
+
+
 const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
           <Route exact path="/tab1">
-            <Tab1 />
+            <Tab1 DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercises={ExerciseSession} />
           </Route>
           <Route exact path="/tab2">
             <Tab2 />
