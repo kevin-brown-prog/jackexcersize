@@ -13,7 +13,11 @@ func main() {
 	fmt.Println("Hello, world!")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", HelloHandler)
-	addr := ":80"
+
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/", fs)
+
+	addr := ":8084"
 	http.ListenAndServe(addr, mux)
 
 }
