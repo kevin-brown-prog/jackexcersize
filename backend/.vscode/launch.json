@@ -8,8 +8,11 @@
             "name": "Launch Package",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}"
+            "mode": "debug",
+            "program": ".\\",
+            "trace": "verbose",
+            "showLog": true,
+            "logOutput": "dap"
         }
     ]
 }
