@@ -1,6 +1,6 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
 
-import './Tab1.css';
+import './WorkOutSessionTab.css';
 import {ExerciseSession, ExerciseSessionData} from '../components/ExcerciseSession';
 
 export interface WorkoutData
@@ -11,7 +11,7 @@ export interface WorkoutData
    exercises:ExerciseSessionData
 }
 
-const Tab1: React.FC<WorkoutData> = ({DoneChanged, RepsChanged, WeightChanged, exercises}) => {
+const WorkOutSessionTab: React.FC<WorkoutData> = ({DoneChanged, RepsChanged, WeightChanged, exercises}) => {
   return (
     <IonPage>
       <IonHeader>
@@ -25,4 +25,4 @@ const Tab1: React.FC<WorkoutData> = ({DoneChanged, RepsChanged, WeightChanged, e
   );
 };
 
-export default Tab1;
+export default WorkOutSessionTab;

@@ -2,6 +2,9 @@
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    /*"trace": "verbose",
+            "showLog": true,
+            "logOutput": "dap"*/
     "version": "0.2.0",
     "configurations": [
         {
@@ -10,9 +13,7 @@
             "request": "launch",
             "mode": "debug",
             "program": ".\\",
-            "trace": "verbose",
-            "showLog": true,
-            "logOutput": "dap"
+            
         }
     ]
 }
