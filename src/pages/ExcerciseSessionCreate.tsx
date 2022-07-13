@@ -1,8 +1,8 @@
-import { IonContent, IonItem, IonInput,IonIcon, IonHeader, IonPage, IonTitle, IonToolbar, IonGrid, IonRow, IonCol, IonButton, IonLabel } from '@ionic/react';
+import { IonContent , IonList, IonItem, IonInput,IonIcon, IonHeader, IonPage, IonTitle, IonToolbar, IonGrid, IonRow, IonCol, IonButton, IonLabel } from '@ionic/react';
 import { add, settings, share, person, arrowForwardCircle, arrowBackCircle, arrowUpCircle, logoVimeo, logoFacebook, logoInstagram, logoTwitter } from 'ionicons/icons';
 
 import ExerciseAdd from '../components/ExcerciseAdd'
-import {ExerciseEdit} from '../components/Excercise'
+import ExerciseEdit from '../components/ExerciseEdit'
 import {ExerciseData} from '../components/Excercise'
 import './ExcerciseSessionCreate.css';
 import React, { useState, useEffect } from 'react';
@@ -41,15 +41,17 @@ const ExcerciseSessionCreate: React.FC = () => {
               }
                 )}></IonInput>
       </IonItem>
+      <IonList>
       <IonItem>
-              {exerciseData.exercises.map((data, index)=>{
-                  <ExerciseEdit exerciseData={data} update={(newData : ExerciseData)=>{
+              {exerciseData.exercises.map((data, index)=>
+                  <ExerciseEdit key={index} exerciseData={data} update={(newData : ExerciseData)=>{
                     const new_data: ExerciseSessionData ={...exerciseData};
                     new_data.exercises[index] = newData;
                       setExcerciseData(new_data);
                   }} />
-              })}
+              )}
        </IonItem>
+       </IonList>
       <IonGrid>
        <ExerciseAdd NewExercise={(e_name:string)=>{
         const new_data = {...exerciseData}
