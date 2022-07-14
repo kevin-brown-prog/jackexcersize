@@ -50,21 +50,21 @@ function WeightChanged(id:number, weight:number ){
 
 }
 
-var set1 = { set_id : 0,
+var set1 = { set_id : "0",
 weight : 135,
 reps_or_duration : 5,
 done : false,
 is_time_based: false
 };
 
-var set2 = { set_id : 1,
+var set2 = { set_id : "1",
   weight : 135,
   reps_or_duration : 5,
   done : false,
   is_time_based: false,
  };
 
- var set3 = { set_id : 2,
+ var set3 = { set_id : "2",
   weight : 135,
   reps_or_duration : 5,
   done : false,
@@ -78,21 +78,21 @@ var set2 = { set_id : 1,
   }
 
 
-   set1 = { set_id : 3,
+   set1 = { set_id : "3",
     weight : 135,
     reps_or_duration : 5,
     done : false,
     is_time_based: false
     };
     
-     set2 = { set_id : 4,
+     set2 = { set_id : "4",
       weight : 135,
       reps_or_duration : 5,
       done : false,
       is_time_based: false,
      };
     
-      set3 = { set_id : 5,
+      set3 = { set_id : "5",
       weight : 135,
       reps_or_duration : 5,
       done : false,

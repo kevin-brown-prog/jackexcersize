@@ -2,22 +2,7 @@ import React from 'react';
 import Set, {SetData, SetEdit} from './Set';
 import {  IonList, IonItem, IonLabel, IonListHeader } from '@ionic/react';
 
-export const ExerciseEdit :React.FC<ExcersizeEditProp> = ({exerciseData, update}) => {
-  return (
-      <IonItem >
-       <IonList>
-       <IonListHeader>
-           <IonLabel>here{exerciseData.name}</IonLabel>
-        </IonListHeader>  
-         {exerciseData.sets.map( (s,index)=><SetEdit key={index} index={index} setData={s} UpdateData={(i:number, new_set :SetData)=>{
-          const ret = {...exerciseData}
-          ret.sets[i] = new_set;
-          update(ret);
-         }}/>)}
-       </IonList> 
-     </IonItem>
-  );
-};
+
 
 
 
@@ -48,9 +33,4 @@ const Exercise: React.FC<ExerciseProp> = ({  exerciseData, DoneChanged, RepsChan
 };
 
 export default Exercise;
-interface ExcersizeEditProp
-{
-  exerciseData : ExerciseData;
-  update : Function
-}
 

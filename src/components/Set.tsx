@@ -4,7 +4,7 @@ import { IonInput, IonCheckbox, IonListHeader, IonItem, IonLabel} from '@ionic/r
 	
 
 export interface SetData{
-    set_id : number;
+    set_id : string;
     weight : number;
     reps_or_duration : number;
     done : boolean;
@@ -157,17 +157,17 @@ export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData}) =>
       <IonItem>
       <IonInput inputmode="numeric" value={weightComplete} onIonInput={(e: any)=>OnChangeWeight(e.target.value )}></IonInput>
       </IonItem>
-      <IonItem>
-        <IonItem>Is Time Based</IonItem>
-        <IonCheckbox checked={setData.is_time_based} onIonChange={(e)=> setIsTimeBasedComplete(e.detail.checked)}  />
-      </IonItem>
+     
       <IonItem>
         <IonLabel>{isTimeBasedComplete? "Duration seconds" : "Reps"}</IonLabel>
       </IonItem>
       <IonItem>
       <IonInput inputmode="numeric" pattern="[0-9]" min={0}  value={repsComplete}  onIonInput={(e: any)=>OnChangeReps(e.target.value )}></IonInput>
       </IonItem>
-    
+      <IonItem>
+        <IonLabel>Is Time Based</IonLabel>
+        <IonCheckbox checked={setData.is_time_based} onIonChange={(e)=> setIsTimeBasedComplete(e.detail.checked)}  />
+      </IonItem>
     </IonListHeader>
   );
 };

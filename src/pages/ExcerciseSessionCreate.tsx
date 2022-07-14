@@ -7,6 +7,7 @@ import {ExerciseData} from '../components/Excercise'
 import './ExcerciseSessionCreate.css';
 import React, { useState, useEffect } from 'react';
 import {ExerciseSessionData} from '../components/ExcerciseSession'
+import { SetData } from '../components/Set';
 
 
 
@@ -42,7 +43,7 @@ const ExcerciseSessionCreate: React.FC = () => {
                 )}></IonInput>
       </IonItem>
       <IonList>
-      <IonItem>
+     
               {exerciseData.exercises.map((data, index)=>
                   <ExerciseEdit key={index} exerciseData={data} update={(newData : ExerciseData)=>{
                     const new_data: ExerciseSessionData ={...exerciseData};
@@ -50,7 +51,7 @@ const ExcerciseSessionCreate: React.FC = () => {
                       setExcerciseData(new_data);
                   }} />
               )}
-       </IonItem>
+      
        </IonList>
       <IonGrid>
        <ExerciseAdd NewExercise={(e_name:string)=>{
@@ -59,6 +60,15 @@ const ExcerciseSessionCreate: React.FC = () => {
           name : e_name,
          sets : []
         }
+        const set : SetData ={
+          set_id:"",
+          weight:135,
+          reps_or_duration:3,
+          done : false,
+          is_time_based:false
+
+        }
+      new_exercise.sets.push(set)
         new_data.exercises.push(new_exercise)
         setExcerciseData(new_data);
        }}/>
