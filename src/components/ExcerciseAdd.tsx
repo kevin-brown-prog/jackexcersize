@@ -22,7 +22,7 @@ const ExcersiseAdd: React.FC<ExcersiseAddProps> = ({NewExercise}) => {
          <IonRow>
           <IonCol> <IonButton onClick={(e)=>NewExercise(currentExercise)}> <IonIcon icon={add} /></IonButton></IonCol>
           <IonCol>
-          <IonSelect placeholder="Select Excersice"   onIonChange={(e)=>{setCurrentExercise(e.detail.value!)}}  >
+          <IonSelect placeholder="Select Excersice" value={excercises[0]}   onIonChange={(e)=>{setCurrentExercise(e.detail.value!)}}  >
           {excercises.map( (s,index)=><IonSelectOption key={index}   value={s}>{s}</IonSelectOption> )}
          
 
