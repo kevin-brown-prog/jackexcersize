@@ -37,17 +37,87 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import { ExerciseSessionData } from './components/ExcerciseSession';
+import { serialize } from 'v8';
 //https://www.pluralsight.com/guides/using-firebase-with-react-and-redux
 setupIonicReact();
 
-function DoneChange(id :number, is_done:boolean){
+function DoneChange(id :string, is_done:boolean){
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, is_done: is_done })
+};
+fetch('/api/done_changed/'+encodeURIComponent(id)+"/"+encodeURIComponent(is_done), requestOptions)
+    .then(response => response.json())
+   .catch( (reason)=>{
+ //   alert(reason);
+   })
+
+
+
 
 }
-function RepsChange(id:number, reps_update:number){
-
+function RepsChange(id:string, reps_update:number){
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, reps: reps_update })
+};
+fetch('/api/reps_change/'+encodeURIComponent(id)+"/"+encodeURIComponent(reps_update), requestOptions)
+    .then(response => response.json())
+   .catch( (reason)=>{
+ //   alert(reason);
+   })
 }
-function WeightChanged(id:number, weight:number ){
+function WeightChanged(id:string, weight:number ){
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id, weight: weight })
+};
+fetch('/api/weight_change/'+encodeURIComponent(id)+"/"+encodeURIComponent(weight), requestOptions)
+    .then(response => response.json())
+   .catch( (reason)=>{
+ //   alert(reason);
+   })
+}
 
+function AddExerciseSession(session : ExerciseSessionData, callback : Function ){
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(session)
+};
+fetch('/api/add_exercise_session', requestOptions)
+    .then(response => response.json()).then(obj=>{
+
+      callback(obj.ID)
+
+    })
+  
+   .catch( (reason)=>{
+ //   alert(reason);
+   })
+}
+
+
+function DeleteExerciseSession(sessionID : string, callback : Function ){
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ID:sessionID})
+};
+fetch('/api/delete_exercise_session/' + encodeURIComponent(sessionID), requestOptions)
+    .then(response => response.json()).then(obj=>{
+
+      callback(obj.ID)
+
+    })
+  
+   .catch( (reason)=>{
+//    alert(reason);
+   })
 }
 
 var set1 = { set_id : "0",

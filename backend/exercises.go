@@ -100,12 +100,12 @@ type Set struct {
 	TimeStampAdded     time.Time `firestore:"TimeStampAdded" json:"TimeStampAdded"`
 	TimeStampCompleted time.Time `firestore:"TimeStampCompleted" json:"TimeStampCompleted"`
 }
-type Excercise struct {
+type Exercise struct {
 	Name string `firestore:"name" json:"name"`
-	Sets Set    `firestore:"sets" json:"sets"`
+	Sets []Set  `firestore:"sets" json:"sets"`
 }
-type ExcerciseSession struct {
-	Name       string    `firestore:"name" json:"name"`
-	Date       time.Time `firestore:"date" json:"date"`
-	Excercises Excercise `firestore:"exercises" json:"excercises"`
+type ExerciseSession struct {
+	Name      string     `firestore:"name" json:"name"`
+	Date      time.Time  `firestore:"date" json:"date"`
+	Exercises []Exercise `firestore:"exercises" json:"excercises"`
 }
