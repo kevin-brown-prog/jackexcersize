@@ -11,9 +11,13 @@ import { SetData } from '../components/Set';
 
 
 
+interface SessionCreateData
+{
+  AddExerciseSession:Function;
+   
+}
 
-
-const ExcerciseSessionCreate: React.FC = () => {
+const ExcerciseSessionCreate: React.FC<SessionCreateData> = ({AddExerciseSession}) => {
   const initial_data :ExerciseSessionData ={
     name : "",
     date : new Date(),
@@ -22,7 +26,10 @@ const ExcerciseSessionCreate: React.FC = () => {
   
   const [exerciseData, setExcerciseData] = useState(initial_data as ExerciseSessionData);
 
-
+  const Add = ()=>{
+    AddExerciseSession(exerciseData);
+    setExcerciseData(initial_data);
+  }
 
   return (
     <IonPage>
@@ -41,6 +48,8 @@ const ExcerciseSessionCreate: React.FC = () => {
                  return new_data;
               }
                 )}></IonInput>
+              
+              <IonButton onClick={(e)=>Add()}>Add Session</IonButton>
       </IonItem>
       <IonList>
      
@@ -58,12 +67,13 @@ const ExcerciseSessionCreate: React.FC = () => {
         const new_data = {...exerciseData}
         const new_exercise : ExerciseData={
           name : e_name,
-         sets : []
+         sets : [],
+         is_time_based: false
         }
         const set : SetData ={
           set_id:"",
           weight:135,
-          reps_or_duration:3,
+          reps_or_duration:5,
           done : false,
           is_time_based:false
 

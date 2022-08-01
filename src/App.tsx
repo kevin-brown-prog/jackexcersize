@@ -123,28 +123,25 @@ fetch('/api/delete_exercise_session/' + encodeURIComponent(sessionID), requestOp
 var set1 = { set_id : "0",
 weight : 135,
 reps_or_duration : 5,
-done : false,
-is_time_based: false
+done : false
 };
 
 var set2 = { set_id : "1",
   weight : 135,
   reps_or_duration : 5,
   done : false,
-  is_time_based: false,
  };
 
  var set3 = { set_id : "2",
   weight : 135,
   reps_or_duration : 5,
   done : false,
-  is_time_based: false,
   };
 
   var Exercise1 = {
     name:"Bench Press",
-    sets :[set1, set2,set3]
-
+    sets :[set1, set2,set3],
+    is_time_based:false
   }
 
 
@@ -152,28 +149,29 @@ var set2 = { set_id : "1",
     weight : 135,
     reps_or_duration : 5,
     done : false,
-    is_time_based: false
+    
     };
     
      set2 = { set_id : "4",
       weight : 135,
       reps_or_duration : 5,
       done : false,
-      is_time_based: false,
+    
      };
     
       set3 = { set_id : "5",
       weight : 135,
       reps_or_duration : 5,
       done : false,
-      is_time_based: false,
+     
       };
 
 
 
   var Exercise2 = {
     name:"Squats",
-    sets:[set1, set2, set3]
+    sets:[set1, set2, set3],
+    is_time_based: false
   }
 
   let ExerciseSession ={
@@ -194,7 +192,7 @@ const App: React.FC = () => (
             <WorkOutSessionTab DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercises={ExerciseSession} />
           </Route>
           <Route exact path="/tab2">
-            <ExcerciseSessionCreate />
+            <ExcerciseSessionCreate AddExerciseSession={AddExerciseSession} />
           </Route>
           <Route path="/tab3">
             <Tab3 />

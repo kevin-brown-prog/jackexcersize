@@ -8,7 +8,6 @@ export interface SetData{
     weight : number;
     reps_or_duration : number;
     done : boolean;
-    is_time_based: boolean
   
 }
 
@@ -18,12 +17,13 @@ interface SetProperty
     WeightChanged : Function;
     DoneChanged : Function;
     RepsChanged : Function;
+    is_time_based : boolean
 }
 
 
 
 
-const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, WeightChanged }) => {
+const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, WeightChanged, is_time_based }) => {
 	const [isDone, setIsDone] = useState(setData.done);
     const [weightComplete, setWeightComplete] = useState(setData.weight)
     const [repsComplete, setRepsComplete] = useState(setData.reps_or_duration);
@@ -85,7 +85,7 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
       <IonInput inputmode="numeric" value={weightComplete} onIonInput={(e: any)=>OnChangeWeight(e.target.value )}></IonInput>
       </IonItem>
       <IonItem>
-        <IonLabel>{setData.is_time_based? "Duration seconds" : "Reps"}</IonLabel>
+        <IonLabel>{is_time_based? "Duration seconds" : "Reps"}</IonLabel>
       </IonItem>
       <IonItem>
       <IonInput inputmode="numeric" pattern="[0-9]" min={0}  value={repsComplete}  onIonInput={(e: any)=>OnChangeReps(e.target.value )}></IonInput>
@@ -102,17 +102,17 @@ interface SetInputData{
   index : number;
   setData : SetData
   UpdateData : Function
-
+  is_time_based: boolean
 }
 
-export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData}) => {
+export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData, is_time_based}) => {
 	
     const [weightComplete, setWeightComplete] = useState(setData.weight)
     const [repsComplete, setRepsComplete] = useState(setData.reps_or_duration);
-    const [isTimeBasedComplete, setIsTimeBasedComplete] = useState(setData.is_time_based);
+    
     useEffect(() => {
-      UpdateData(index, {...setData, weight : weightComplete, reps_or_duration: repsComplete, is_time_based: isTimeBasedComplete });
-      }, [weightComplete,index, weightComplete, repsComplete, isTimeBasedComplete ]); // Only re-run the effect if count changes
+      UpdateData(index, {...setData, weight : weightComplete, reps_or_duration: repsComplete });
+      }, [weightComplete,index, weightComplete, repsComplete ]); // Only re-run the effect if count changes
 
     
   
@@ -153,20 +153,14 @@ export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData}) =>
     <IonListHeader>
       <IonItem>
         <IonLabel>Weight</IonLabel>
-      </IonItem>
-      <IonItem>
+      
       <IonInput inputmode="numeric" value={weightComplete} onIonInput={(e: any)=>OnChangeWeight(e.target.value )}></IonInput>
-      </IonItem>
      
-      <IonItem>
-        <IonLabel>{isTimeBasedComplete? "Duration seconds" : "Reps"}</IonLabel>
-      </IonItem>
-      <IonItem>
+       <IonLabel>{is_time_based? "Duration seconds" : "Reps"}</IonLabel>
+  
       <IonInput inputmode="numeric" pattern="[0-9]" min={0}  value={repsComplete}  onIonInput={(e: any)=>OnChangeReps(e.target.value )}></IonInput>
-      </IonItem>
-      <IonItem>
-        <IonLabel>Is Time Based</IonLabel>
-        <IonCheckbox checked={setData.is_time_based} onIonChange={(e)=> setIsTimeBasedComplete(e.detail.checked)}  />
+     
+       
       </IonItem>
     </IonListHeader>
   );

@@ -20,7 +20,7 @@ const ExcersiseAdd: React.FC<ExcersiseAddProps> = ({NewExercise}) => {
    let currentSel = excercises[0]
   return (
          <IonRow>
-          <IonCol> <IonButton onClick={(e)=>NewExercise(currentExercise)}> <IonIcon icon={add} /></IonButton></IonCol>
+          
           <IonCol>
           <IonSelect placeholder="Select Excersice" value={excercises[0]}   onIonChange={(e)=>{setCurrentExercise(e.detail.value!)}}  >
           {excercises.map( (s,index)=><IonSelectOption key={index}   value={s}>{s}</IonSelectOption> )}
@@ -30,7 +30,8 @@ const ExcersiseAdd: React.FC<ExcersiseAddProps> = ({NewExercise}) => {
 
 
           </IonCol>
-        
+          <IonCol> <IonButton onClick={(e)=>NewExercise(currentExercise)}> <IonIcon icon={add} /></IonButton></IonCol>
+          
           </IonRow>
   );
 };

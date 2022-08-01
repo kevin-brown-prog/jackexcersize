@@ -107,7 +107,10 @@ func (db *DB) AddExerciseSession(c *gin.Context) {
 	}{Name: es.Name, Date: es.Date})
 	for _, e := range es.Exercises {
 		var exercise = db.firestore.Collection("Exercises").NewDoc()
-		exercise.Set(context.Background(), struct{ Name string }{Name: e.Name})
+		exercise.Set(context.Background(), struct {
+			Name        string
+			IsTimeBased bool
+		}{Name: e.Name, IsTimeBased: e.IsTimeBased})
 		exercise_session.Collection("Exercises").NewDoc().Set(context.Background(), struct{ ID string }{ID: exercise.ID})
 
 		for _, s := range e.Sets {

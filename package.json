@@ -2,6 +2,7 @@
   "name": "workout",
   "version": "0.0.1",
   "private": true,
+  "proxy":"http://localhost:8080",
   "dependencies": {
     "@capacitor/app": "1.1.1",
     "@capacitor/core": "3.6.0",

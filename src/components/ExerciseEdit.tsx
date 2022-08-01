@@ -38,8 +38,7 @@ interface ExcersizeEditProp
             set_id:"",
             weight:135,
             reps_or_duration:3,
-            done : false,
-            is_time_based:false
+            done : false
   
           }
         }

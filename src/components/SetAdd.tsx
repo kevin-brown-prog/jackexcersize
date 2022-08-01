@@ -17,8 +17,9 @@ const SetAdd: React.FC<SetAddProps> = ({NewSet}) => {
   
   return (
     <IonItem>
-        <IonButton onClick={(e)=>NewSet()}> <IonIcon icon={add} /></IonButton>
-        <IonLabel>Add Set</IonLabel>
+        
+      
+        <IonButton onClick={(e)=>NewSet()}> Add Set</IonButton>
     </IonItem>
   );
 };

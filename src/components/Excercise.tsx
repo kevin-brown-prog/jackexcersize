@@ -9,6 +9,7 @@ import {  IonList, IonItem, IonLabel, IonListHeader } from '@ionic/react';
 export interface ExerciseData {
   name: string;
   sets : Array<SetData>;
+  is_time_based:boolean;
 
 }
  interface ExerciseProp{
