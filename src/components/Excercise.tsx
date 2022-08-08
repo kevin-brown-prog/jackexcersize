@@ -1,5 +1,6 @@
 import React from 'react';
 import Set, {SetData, SetEdit} from './Set';
+import SetAdd from './SetAdd'
 import {  IonList, IonItem, IonLabel, IonListHeader } from '@ionic/react';
 
 
@@ -27,7 +28,8 @@ const Exercise: React.FC<ExerciseProp> = ({  exerciseData, DoneChanged, RepsChan
        <IonListHeader>
            <IonLabel>{exerciseData.name}</IonLabel>
         </IonListHeader>  
-         {exerciseData.sets.map( (s,index)=><Set key={index} setData={s}  DoneChanged={DoneChanged} RepsChanged={RepsChanged} WeightChanged={WeightChanged}/>)}
+         {exerciseData.sets.map( (s,index)=><Set key={index}  setData={s} is_time_based={exerciseData.is_time_based}
+           DoneChanged={DoneChanged} RepsChanged={RepsChanged} WeightChanged={WeightChanged}/>)}
        </IonList>
      </IonItem>
   );

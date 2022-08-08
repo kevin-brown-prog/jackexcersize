@@ -83,6 +83,21 @@ fetch('/api/weight_change/'+encodeURIComponent(id)+"/"+encodeURIComponent(weight
    })
 }
 
+async function GetExerciseSessionsNotCompleted(){
+  const requestOptions = {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: ""
+};
+return await fetch('/api/get_sessions_not_complete/', requestOptions)
+    .then(response => response.json().then(json_obj=>{return (json_obj)}))
+   .catch( (reason)=>{
+     alert(reason);
+   })
+
+
+}
+
 function AddExerciseSession(session : ExerciseSessionData, callback : Function ){
   const requestOptions = {
     method: 'POST',
@@ -189,7 +204,7 @@ const App: React.FC = () => (
       <IonTabs>
         <IonRouterOutlet>
           <Route exact path="/tab1">
-            <WorkOutSessionTab DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercises={ExerciseSession} />
+            <WorkOutSessionTab DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercisesSessions={GetExerciseSessionsNotCompleted()} />
           </Route>
           <Route exact path="/tab2">
             <ExcerciseSessionCreate AddExerciseSession={AddExerciseSession} />

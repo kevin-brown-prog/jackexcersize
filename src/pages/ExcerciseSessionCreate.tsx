@@ -74,8 +74,7 @@ const ExcerciseSessionCreate: React.FC<SessionCreateData> = ({AddExerciseSession
           set_id:"",
           weight:135,
           reps_or_duration:5,
-          done : false,
-          is_time_based:false
+          done : false
 
         }
       new_exercise.sets.push(set)

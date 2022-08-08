@@ -125,7 +125,7 @@ export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData, is_
     
         // if value is not blank, then test the regex
     
-        if (val === '' || re.test(val)) {
+        if ( re.test(val)) {
             setRepsComplete(parseInt(val));
         }
         else{
@@ -138,8 +138,8 @@ export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData, is_
     const re = /^[0-9\b]+$/;
 
     // if value is not blank, then test the regex
-
-    if (val === '' || re.test(val)) {
+    
+    if ( re.test(val)) {
         setWeightComplete(parseInt(val));
     }
     else{
@@ -154,7 +154,7 @@ export const SetEdit: React.FC<SetInputData> = ({index, setData, UpdateData, is_
       <IonItem>
         <IonLabel>Weight</IonLabel>
       
-      <IonInput inputmode="numeric" value={weightComplete} onIonInput={(e: any)=>OnChangeWeight(e.target.value )}></IonInput>
+      <IonInput inputmode="decimal" value={weightComplete} onIonInput={(e: any)=>OnChangeWeight(e.target.value )}></IonInput>
      
        <IonLabel>{is_time_based? "Duration seconds" : "Reps"}</IonLabel>
   

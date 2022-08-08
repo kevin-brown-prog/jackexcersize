@@ -27,8 +27,7 @@ interface ExcersizeEditProp
                 set_id:"",
                 weight:last_set.weight,
                 reps_or_duration:last_set.reps_or_duration,
-                done : false,
-                is_time_based:false
+                done : false
       
               }
         }
@@ -51,7 +50,7 @@ interface ExcersizeEditProp
             <IonListHeader>
              <IonLabel>{exerciseData.name}</IonLabel>
           </IonListHeader>  
-           {exerciseData.sets.map( (s,index)=><SetEdit key={index} index={index} setData={s} UpdateData={(i:number, new_set :SetData)=>{
+           {exerciseData.sets.map( (s,index)=><SetEdit key={index} is_time_based={exerciseData.is_time_based} index={index} setData={s} UpdateData={(i:number, new_set :SetData)=>{
             const ret = {...exerciseData}
             ret.sets[i] = new_set;
             update(ret);
