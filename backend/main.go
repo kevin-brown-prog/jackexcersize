@@ -147,8 +147,12 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 	var docs []ExerciseSession = make([]ExerciseSession, 0, 10)
 	for {
 		doc, err := iter.Next()
+
 		if err == iterator.Done {
 			break
+		} else if err != nil {
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return
 		}
 
 		excersizeSession := doc.Data()

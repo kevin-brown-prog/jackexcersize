@@ -8,62 +8,45 @@ export interface WorkoutData
    DoneChanged:Function;
    RepsChanged:Function;
    WeightChanged: Function;
-   exercisesSessionsGet: Function
+   exercisesSessionsNotComplete: ExerciseSessionData[]
 }
 
-const WorkOutSessionTab: React.FC<WorkoutData> = ({DoneChanged, RepsChanged, WeightChanged, exercisesSessionsGet}) => {
+const WorkOutSessionTab: React.FC<WorkoutData> = ({DoneChanged, RepsChanged, WeightChanged, exercisesSessionsNotComplete}) => {
 
-  const initial_data :ExerciseSessionData ={
-    name : "",
-    date : new Date(),
-    exercises : [],
-    commpleted : false
-  }
   
 
-  const [selectedExerciseSession, setExcerciseData] = useState<ExerciseSessionData>();
+  const [selectedExerciseSession, setExcerciseData] = useState<ExerciseSessionData>(exercisesSessionsNotComplete[0]);
 
-  const [exercisesSessions, setExercisesSessions ] = useState([initial_data])
+ 
 
   const setCurrentExerciseSession = (s : String)=>{
-    for(let i = 0; i < exercisesSessions.length; i++){
-      if(exercisesSessions[i].name ==s){
-        setExcerciseData(exercisesSessions[i]);
+    for(let i = 0; i < exercisesSessionsNotComplete.length; i++){
+      if(exercisesSessionsNotComplete[i].name ==s){
+        setExcerciseData(exercisesSessionsNotComplete[i]);
         break;
       }
     }
    
   }
 
-  useEffect( ()=>{
-    exercisesSessionsGet( (data:ExerciseSessionData[] )=>{
-      if(data.length != 0){
-        setExercisesSessions(data)
-      }
-      
-    })
-  },[ exercisesSessionsGet])
+  
 
   return (
-    <IonPage>
-      {selectedExerciseSession &&
+    <IonPage class="limit-width">
+      
       <IonCard> 
         <IonSelect placeholder="Select Exercise Session" value={selectedExerciseSession.name}   onIonChange={(e)=>{setCurrentExerciseSession(e.detail.value!)}}  >
-            {exercisesSessions.map( (s,index)=><IonSelectOption key={index}   value={s.name}>{s.name}</IonSelectOption> )}
+            {exercisesSessionsNotComplete.map( (s,index)=><IonSelectOption key={index}   value={s.name}>{s.name}</IonSelectOption> )}
           
 
       </IonSelect> 
-     </IonCard>}
-     {selectedExerciseSession ?
+     </IonCard>
+    
       <IonContent fullscreen>
         
         <ExerciseSession exerciseSession={selectedExerciseSession}  RepsChanged={RepsChanged} WeightChanged={WeightChanged} DoneChanged={DoneChanged} />
       </IonContent> 
-      :
-      <IonCard>
-      <IonItem color="danger">No incomplete exercises found</IonItem>
-      </IonCard>
-     }
+    
     </IonPage>
   );
 };

@@ -1,13 +1,18 @@
 import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
+  IonCard,
   IonIcon,
+  IonItem,
   IonLabel,
+  IonLoading,
   IonRouterOutlet,
+  IonSpinner,
   IonTabBar,
   IonTabButton,
   IonTabs,
-  setupIonicReact
+  setupIonicReact,
+  useIonLoading
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
@@ -39,6 +44,7 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import { ExerciseSessionData } from './components/ExcerciseSession';
 import { serialize } from 'v8';
+import { useEffect, useState } from 'react';
 //https://www.pluralsight.com/guides/using-firebase-with-react-and-redux
 setupIonicReact();
 
@@ -88,17 +94,13 @@ fetch('/api/weight_change/'+encodeURIComponent(id)+"/"+encodeURIComponent(weight
     method: 'GET',
     headers: { 'Content-Type': 'application/json' }
   };
- /* return new Promise<any>(resolve => {
-    setTimeout(() => {
-      resolve(null);
-    }, 2000);
-  });*/
+ 
  
 
  fetch('/api/get_sessions_not_complete/', requestOptions)
     .then(response => response.json().then(json_obj=>{callback (json_obj)}))
    .catch( (reason)=>{
-     alert(reason);
+     alert("Cound not get sessions " + reason);
    })
 
 
@@ -141,76 +143,60 @@ fetch('/api/delete_exercise_session/' + encodeURIComponent(sessionID), requestOp
    })
 }
 
-var set1 = { set_id : "0",
-weight : 135,
-reps_or_duration : 5,
-done : false
-};
-
-var set2 = { set_id : "1",
-  weight : 135,
-  reps_or_duration : 5,
-  done : false,
- };
-
- var set3 = { set_id : "2",
-  weight : 135,
-  reps_or_duration : 5,
-  done : false,
-  };
-
-  var Exercise1 = {
-    name:"Bench Press",
-    sets :[set1, set2,set3],
-    is_time_based:false
-  }
-
-
-   set1 = { set_id : "3",
-    weight : 135,
-    reps_or_duration : 5,
-    done : false,
-    
-    };
-    
-     set2 = { set_id : "4",
-      weight : 135,
-      reps_or_duration : 5,
-      done : false,
-    
-     };
-    
-      set3 = { set_id : "5",
-      weight : 135,
-      reps_or_duration : 5,
-      done : false,
+const App: React.FC = () => {
+   const [loading, setLoading] = useState(true);
+   const [noSessions, setNoSessions] = useState(true);
+   const [sessionsNotComplete, setSessionsNotComplete] = useState<ExerciseSessionData[]>( []);
+   
+   
+   useEffect(()=>{
+    GetExerciseSessionsNotCompleted((s: ExerciseSessionData[])=>{
      
-      };
+      if(s.length != 0){
+        setSessionsNotComplete(s);
+        setLoading(false);
+        setNoSessions(false);
+       
+      }
+      else{
+        setNoSessions(true);
+      }
+      
+    
+    })
+   })
 
+   const returnCorrectCompenent = ()=>{
+      if(loading === false && noSessions ==false){
+        return ( <WorkOutSessionTab DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercisesSessionsNotComplete={sessionsNotComplete} />)
+      }
+      else if(loading){
+        return (  <IonLoading
+          
+          isOpen={loading}
+         
+          message={'Please wait...'}
+         
+        />)
+      }
+      else{
+        return ( <IonCard >
+          <IonItem color="danger">No incomplete sessions found</IonItem>
+          </IonCard>)
+      }
 
+   }
 
-  var Exercise2 = {
-    name:"Squats",
-    sets:[set1, set2, set3],
-    is_time_based: false
-  }
-
-  let ExerciseSession ={
-    name:"Monday session",
-    date:new Date(),
-    exercises : [Exercise1, Exercise2]
-  }
-
-
-
-
-const App: React.FC = () => (
+  return (
   <IonApp>
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
           <Route exact path="/tab1">
-            <WorkOutSessionTab DoneChanged={DoneChange} RepsChanged={RepsChange} WeightChanged={WeightChanged} exercisesSessionsGet={GetExerciseSessionsNotCompleted} />
+            { 
+
+           returnCorrectCompenent()
+            }
           </Route>
           <Route exact path="/tab2">
             <ExcerciseSessionCreate AddExerciseSession={AddExerciseSession} />
@@ -238,7 +224,8 @@ const App: React.FC = () => (
         </IonTabBar>
       </IonTabs>
     </IonReactRouter>
-  </IonApp>
-);
+  </IonApp>);
+}
+
 
 export default App;
