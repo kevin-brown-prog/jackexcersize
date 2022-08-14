@@ -27,7 +27,7 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
 	const [isDone, setIsDone] = useState(setData.done);
     const [weightComplete, setWeightComplete] = useState(setData.weight)
     const [repsComplete, setRepsComplete] = useState(setData.reps_or_duration);
-    useEffect(() => {
+  /*  useEffect(() => {
         DoneChanged(setData.set_id,isDone);
       }, [isDone, DoneChanged, setData.set_id]); // Only re-run the effect if count changes
 
@@ -39,7 +39,7 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
 
     useEffect(()=>{
             WeightChanged(setData.set_id, weightComplete);
-    }, [weightComplete, WeightChanged, setData.set_id]);
+    }, [weightComplete, WeightChanged, setData.set_id]);*/
 
   const OnChangeReps = (val : string)=>{
    
@@ -48,11 +48,17 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
         // if value is not blank, then test the regex
     
         if (val === '' || re.test(val)) {
-            setRepsComplete(parseInt(val));
+            let new_val = parseInt(val);
+            setRepsComplete(new_val);
+            RepsChanged(setData.set_id, new_val)
         }
         else{
             setRepsComplete(repsComplete);
         }
+  }
+  const OnDoneChanged = (val : boolean)=>{
+    setIsDone(val);
+    DoneChanged(setData.set_id, val)
   }
 
   const OnChangeWeight = (val : string)=>{
@@ -62,7 +68,10 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
     // if value is not blank, then test the regex
 
     if (val === '' || re.test(val)) {
-        setWeightComplete(parseInt(val));
+        let new_weight = parseInt(val);
+        setWeightComplete(new_weight);
+        WeightChanged(new_weight)
+
     }
     else{
         setWeightComplete(weightComplete);
@@ -75,7 +84,7 @@ const Set: React.FC<SetProperty> = ({  setData, DoneChanged, RepsChanged, Weight
     <IonListHeader>
       <IonItem>
          
-        <IonCheckbox checked={isDone} onIonChange={e => setIsDone(e.detail.checked)} />
+        <IonCheckbox checked={isDone} onIonChange={e => OnDoneChanged(e.detail.checked)} />
 		
       </IonItem>
       <IonItem>

@@ -94,12 +94,13 @@ type ExcerciseSession struct {
 }
 */
 type Set struct {
-	Weight         int  `firestore:"weight" json:"weight"`
-	RepsOrDuration int  `firestore:"reps_or_duration" json:"reps_or_duration"`
-	Done           bool `firestore:"done" json:"done"`
-
-	TimeStampAdded     time.Time `firestore:"TimeStampAdded" json:"TimeStampAdded"`
-	TimeStampCompleted time.Time `firestore:"TimeStampCompleted" json:"TimeStampCompleted"`
+	Weight             int       `firestore:"weight" json:"weight"`
+	RepsOrDuration     int       `firestore:"reps_or_duration" json:"reps_or_duration"`
+	Done               bool      `firestore:"done" json:"done"`
+	SetID              string    `firestore:"set_id" json:"set_id"`
+	ExerciseSessionID  string    `firestore:"exercise_session_id" json:"exercise_session_id"`
+	TimeStampAdded     time.Time `firestore:"time_stamp_added" json:"time_stamp_added"`
+	TimeStampCompleted time.Time `firestore:"time_stamp_completed" json:"time_stamp_completed"`
 }
 type Exercise struct {
 	Name        string `firestore:"name" json:"name"`
@@ -110,4 +111,5 @@ type ExerciseSession struct {
 	Name      string     `firestore:"name" json:"name"`
 	Date      time.Time  `firestore:"date" json:"date"`
 	Exercises []Exercise `firestore:"exercises" json:"exercises"`
+	Completed bool       `firestore:"completed" json:"completed"`
 }

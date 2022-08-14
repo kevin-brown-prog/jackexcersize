@@ -21,7 +21,8 @@ const ExcerciseSessionCreate: React.FC<SessionCreateData> = ({AddExerciseSession
   const initial_data :ExerciseSessionData ={
     name : "",
     date : new Date(),
-    exercises : []
+    exercises : [],
+    commpleted : false
   }
   
   const [exerciseData, setExcerciseData] = useState(initial_data as ExerciseSessionData);

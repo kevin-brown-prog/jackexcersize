@@ -11,7 +11,7 @@ export interface ExerciseSessionData {
   name: string;
   date : Date
   exercises : Array<ExerciseData>;
-  
+  commpleted : boolean;
 }
 
 interface ExcerssizeSessionProp
