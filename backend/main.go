@@ -390,7 +390,8 @@ func (db *DB) AddExerciseSession(c *gin.Context) {
 	res, err := stmt.Exec(es.Completed, 0, "bob", es.Name)
 	checkErr(err)
 	exerciseSessionId, err := res.LastInsertId()
-	checkErr(err)
+	es.
+		checkErr(err)
 
 	for _, e := range es.Exercises {
 
@@ -418,41 +419,7 @@ func (db *DB) AddExerciseSession(c *gin.Context) {
 
 	}
 
-	stmt, err := db.db.Prepare("SELECT ID, Complete, DateComplete,Name from ExerciseSessions where complete=0")
-	checkErr(err)
-	rows, err := stmt.Query()
-	checkErr(err)
-
-	var exercise_session = db.firestore.Collection("ExerciseSessions").NewDoc()
-
-	ns := struct {
-		Name      string    `firestore:"name" json:"name"`
-		Date      time.Time `firestore:"date" json:"date"`
-		Completed bool      `firestore:"completed" json:"completed"`
-	}{Name: es.Name, Date: es.Date, Completed: false}
-
-	exercise_session.Set(context.Background(), ns)
-	for _, e := range es.Exercises {
-		var exercise = db.firestore.Collection("Exercises").NewDoc()
-		exercise.Set(context.Background(), struct {
-			Name        string `firestore:"name" json:"name"`
-			IsTimeBased bool   `firestore:"is_time_based" json:"is_time_based"`
-		}{Name: e.Name, IsTimeBased: e.IsTimeBased})
-		exercise_session.Collection("Exercises").NewDoc().Set(context.Background(), struct{ ID string }{ID: exercise.ID})
-
-		for _, s := range e.Sets {
-			var set = db.firestore.Collection("Sets").NewDoc()
-			exercise.Collection("Sets").Add(context.Background(), struct{ ID string }{ID: set.ID})
-			s.SetID = set.ID
-			s.ExerciseSessionID = exercise_session.ID
-			s.TimeStampAdded = time.Now()
-			s.TimeStampCompleted = time.Unix(0, 0)
-			set.Set(context.Background(), s)
-
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"ID": exercise_session.ID})
+	c.JSON(http.StatusOK, gin.H{"ID": exerciseSessionId})
 }
 
 func (db *DB) DeleteExerciseSession(c *gin.Context) {
