@@ -97,8 +97,8 @@ type Set struct {
 	Weight             int       `firestore:"weight" json:"weight"`
 	RepsOrDuration     int       `firestore:"reps_or_duration" json:"reps_or_duration"`
 	Done               bool      `firestore:"done" json:"done"`
-	SetID              string    `firestore:"set_id" json:"set_id"`
-	ExerciseSessionID  string    `firestore:"exercise_session_id" json:"exercise_session_id"`
+	SetID              int       `firestore:"set_id" json:"set_id"`
+	ExerciseSessionID  int       `firestore:"exercise_session_id" json:"exercise_session_id"`
 	TimeStampAdded     time.Time `firestore:"time_stamp_added" json:"time_stamp_added"`
 	TimeStampCompleted time.Time `firestore:"time_stamp_completed" json:"time_stamp_completed"`
 }

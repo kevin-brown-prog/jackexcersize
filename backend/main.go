@@ -3,6 +3,7 @@ package main
 //https://www.digitalocean.com/community/tutorials/debugging-go-code-with-visual-studio-code
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -19,6 +21,13 @@ import (
 type DB struct {
 	firestore *firestore.Client
 	app       *firebase.App
+	db        *sql.DB
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (db *DB) New() {
@@ -33,6 +42,9 @@ func (db *DB) New() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	db.db, err = sql.Open("sqlite3", "./foo.db")
+	checkErr(err)
 
 	//excercise_sessions := db.firestore.Collection("ExcerciseSessions").ID
 	/*sets := db.firestore.Collection("Sets")
@@ -63,46 +75,143 @@ func (db *DB) DoneChange(c *gin.Context) {
 		return
 	}
 
-	set := db.firestore.Collection("Sets").Doc(id)
-	setData, err := set.Get(context.Background())
+	id_int, err := strconv.Atoi(id)
 	if err != nil {
-		c.JSON(400, gin.H{"message": "Unable to find document"})
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
 		return
 	}
-	exercise_session_id := setData.Data()["exercise_session_id"].(string)
-	set.Update(context.Background(),
-		[]firestore.Update{
-			{
-				Path:  "done",
-				Value: done,
-			},
-		})
 
-	query := db.firestore.Collection("Sets").Where("exercise_session_id", "==", exercise_session_id)
-	iter := query.Documents(context.Background())
-	complete := true
-	for {
-		setDoc, err := iter.Next()
-		if err == iterator.Done {
-			break
+	stmt, err := db.db.Prepare("SELECT exerciseid FROM sets where id=?")
+	checkErr(err)
+
+	rows, err := stmt.Query(id_int)
+	checkErr(err)
+	var exerciseId int
+	if rows.Next() {
+		err = rows.Scan(&exerciseId)
+		if err != nil {
+			checkErr(err)
 		}
-		setLocal := Set{}
-		setDoc.DataTo(&setLocal)
-		if !setLocal.Done {
-			complete = false
+	} else {
+		c.JSON(400, gin.H{"message": "Unable to find set"})
+		return
+	}
+
+	stmt, err = db.db.Prepare("SELECT exerciseSessionId FROM Exercises where id=?")
+	checkErr(err)
+
+	rows, err = stmt.Query(exerciseId)
+	checkErr(err)
+	var exerciseSessionId int
+	if rows.Next() {
+		err = rows.Scan(&exerciseSessionId)
+		if err != nil {
+			checkErr(err)
+		}
+	} else {
+		c.JSON(400, gin.H{"message": "Unable to find set"})
+		return
+	}
+
+	stmt, err = db.db.Prepare("SELECT User from ExerciseSessions where id=?")
+	checkErr(err)
+	rows, err = stmt.Query(exerciseSessionId)
+	var user string
+	if rows.Next() {
+		err = rows.Scan(&user)
+		if err != nil {
+			checkErr(err)
+		}
+	} else {
+		c.JSON(400, gin.H{"message": "Unable to find ExerciseSession"})
+		return
+	}
+	fmt.Println(user)
+	stmt, err = db.db.Prepare("update sets set done=? where id=?")
+	checkErr(err)
+
+	var is_done bool
+	if done {
+		is_done = true
+	} else {
+		is_done = false
+	}
+	res, err := stmt.Exec(is_done, id_int)
+	checkErr(err)
+
+	affect, err := res.RowsAffected()
+	checkErr(err)
+	if affect != 1 {
+		panic("not able to update set")
+	}
+
+	stmt, err = db.db.Prepare("SELECT done from sets where exerciseid=?")
+	checkErr(err)
+	rows, err = stmt.Query(exerciseId)
+	complete := 1
+	for rows.Next() {
+		var done bool
+		err = rows.Scan(&done)
+		if err != nil {
+			checkErr(err)
+		}
+		if done {
+			complete = 0
 			break
 		}
 	}
-	if complete {
-		db.firestore.Collection(("ExerciseSessions")).Doc(exercise_session_id).Update(context.Background(),
+
+	stmt, err = db.db.Prepare("Update ExerciseSessions set complete=? where id=?")
+	checkErr(err)
+	res, err = stmt.Exec(complete, exerciseSessionId)
+	affect, err = res.RowsAffected()
+	checkErr(err)
+	if affect != 1 {
+		panic("not able to update set")
+	}
+
+	/*
+
+		set := db.firestore.Collection("Sets").Doc(id)
+		setData, err := set.Get(context.Background())
+		if err != nil {
+			c.JSON(400, gin.H{"message": "Unable to find document"})
+			return
+		}
+		exercise_session_id := setData.Data()["exercise_session_id"].(string)
+		set.Update(context.Background(),
 			[]firestore.Update{
 				{
-					Path:  "completed",
-					Value: complete,
+					Path:  "done",
+					Value: done,
 				},
 			})
 
-	}
+		query := db.firestore.Collection("Sets").Where("exercise_session_id", "==", exercise_session_id)
+		iter := query.Documents(context.Background())
+		complete := true
+		for {
+			setDoc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			setLocal := Set{}
+			setDoc.DataTo(&setLocal)
+			if !setLocal.Done {
+				complete = false
+				break
+			}
+		}
+		if complete {
+			db.firestore.Collection(("ExerciseSessions")).Doc(exercise_session_id).Update(context.Background(),
+				[]firestore.Update{
+					{
+						Path:  "completed",
+						Value: complete,
+					},
+				})
+
+		}*/
 
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
 
@@ -114,13 +223,30 @@ func (db *DB) RepsChange(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "reps not int"})
 		return
 	}
-	db.firestore.Collection("Sets").Doc(id).Update(context.Background(),
-		[]firestore.Update{
-			{
-				Path:  "reps_or_duration",
-				Value: reps,
-			},
-		})
+	id_int, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
+	stmt, err := db.db.Prepare("update sets set repsorduration=? where id=?")
+	checkErr(err)
+
+	res, err := stmt.Exec(reps, id_int)
+	checkErr(err)
+	affect, err := res.RowsAffected()
+	checkErr(err)
+	if affect != 1 {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("Unable to find set")})
+		return
+	}
+	/*
+		db.firestore.Collection("Sets").Doc(id).Update(context.Background(),
+			[]firestore.Update{
+				{
+					Path:  "reps_or_duration",
+					Value: reps,
+				},
+			})*/
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
 }
 func (db *DB) WeightChanged(c *gin.Context) {
@@ -131,82 +257,107 @@ func (db *DB) WeightChanged(c *gin.Context) {
 		c.JSON(400, gin.H{"message": fmt.Sprintf("weight not int %v", err)})
 		return
 	}
-	db.firestore.Collection("Sets").Doc(id).Update(context.Background(),
-		[]firestore.Update{
-			{
-				Path:  "weight",
-				Value: weight,
-			},
-		})
+
+	id_int, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
+	stmt, err := db.db.Prepare("update sets set weight=? where id=?")
+	checkErr(err)
+
+	res, err := stmt.Exec(weight, id_int)
+	checkErr(err)
+	affect, err := res.RowsAffected()
+	checkErr(err)
+	if affect != 1 {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("Unable to find set")})
+		return
+	}
+	/*
+		db.firestore.Collection("Sets").Doc(id).Update(context.Background(),
+			[]firestore.Update{
+				{
+					Path:  "weight",
+					Value: weight,
+				},
+			})*/
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
 }
 
 func (db *DB) GetSessionsNotComplete(c *gin.Context) {
-	query := db.firestore.Collection("ExerciseSessions").Where("completed", "!=", true)
-	iter := query.Documents(context.Background())
-	var docs []ExerciseSession = make([]ExerciseSession, 0, 10)
-	for {
-		doc, err := iter.Next()
 
-		if err == iterator.Done {
-			break
-		} else if err != nil {
-			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
-			return
+	stmt, err := db.db.Prepare("SELECT ID, Complete, DateComplete,Name from ExerciseSessions where complete=0")
+	checkErr(err)
+	rows, err := stmt.Query()
+	checkErr(err)
+	sessions := make(ExerciseSession, 0, 3)
+	for rows.Next() {
+
+		var complete int
+		var dateComplete int64
+		var name string
+		var exerciseSessionId int
+		err = rows.Scan(&exerciseSessionId, &complete, &dateComplete, &name)
+		if err != nil {
+			checkErr(err)
+		}
+		session := ExerciseSession{Name: name,
+			Date:      time.Unix(dateComplete, 0),
+			Completed: complete != 0,
+			Exercises: make([]Exercise, 0, 5),
 		}
 
-		excersizeSession := doc.Data()
+		stmt, err := db.db.Prepare("SELECT ID, Name,IsTimeBased from Exercises where ExerciseSessionID=?")
+		checkErr(err)
+		rowsExercises, err := stmt.Query(exerciseSessionId)
+		checkErr(err)
+		for rowsExercises.Next() {
+			/*		"ID"	INTEGER NOT NULL UNIQUE,
+					"Name"	TEXT NOT NULL,
+					"IsTimeBased"	INTEGER NOT NULL,
+					"ExerciseSessionID"	INTEGER NOT NULL,*/
+			var exerciseId int
+			var name string
+			var isTimeBased int
+			err = rowsExercises.Scan(&exerciseId, &name, &isTimeBased)
+			checkErr(err)
+			exercise := Exercise{Name: name, IsTimeBased: isTimeBased != 0, Sets: make([]Set, 0, 5)}
 
-		es := ExerciseSession{}
-		es.Completed = excersizeSession["completed"].(bool)
-		es.Date = excersizeSession["date"].(time.Time)
-		es.Name = excersizeSession["name"].(string)
-		exercisesIter := doc.Ref.Collection("Exercises").Documents(context.Background())
-		es.Exercises = make([]Exercise, 0, 5)
-		for {
-			exercieseDoc, err := exercisesIter.Next()
-			if err == iterator.Done {
-				break
-			}
+			/*
+						"ID"	INTEGER NOT NULL UNIQUE,
+				"Weight"	INTEGER NOT NULL,
+				"RepsOrDuration"	INTEGER NOT NULL,
+				"Done"	INTEGER NOT NULL,
+				"ExerciseID"	INTEGER NOT NULL,*/
 
-			exerciseDocValue, err := db.firestore.Collection("Exercises").Doc(exercieseDoc.Data()["ID"].(string)).Get(context.Background())
-			if err != nil {
-				c.JSON(400, gin.H{"message": "Unable to find document"})
-				return
-			}
-			exerciseMap := exerciseDocValue.Data()
-			exercise := Exercise{}
-			exercise.Name = exerciseMap["name"].(string)
-			exercise.IsTimeBased = exerciseMap["is_time_based"].(bool)
-			exercise.Sets = make([]Set, 0, 5)
-			setsIter := exerciseDocValue.Ref.Collection("Sets").Documents(context.Background())
-
-			for {
-				setDocument, err := setsIter.Next()
-				if err == iterator.Done {
-					break
-				}
-				setsDocValue, err := db.firestore.Collection("Sets").Doc(setDocument.Data()["ID"].(string)).Get(context.Background())
-				if err != nil {
-					c.JSON(400, gin.H{"message": "Unable to find document"})
-					return
-				}
-				set := Set{}
-				err = setsDocValue.DataTo(&set)
-				if err != nil {
-					c.JSON(400, gin.H{"message": "Unable to find document"})
-					return
-				}
-
+			stmt, err := db.db.Prepare("SELECT ID, Weight,RepsOrDuration,Done,TimestampAdded,TimestampCompleted from Sets where ExerciseID=?")
+			checkErr(err)
+			rowsSets, err := stmt.Query(exerciseId)
+			checkErr(err)
+			for rowsSets.Next() {
+				var set_id int
+				var weight int
+				var repsOrDuration int
+				var done int
+				var timeStampCompleted int64
+				var timeStampAdded int64
+				err = rowsSets.Scan(&set_id, &weight, &repsOrDuration, &done, &timeStampCompleted, &timeStampAdded)
+				checkErr(err)
+				set := Set{SetID: set_id, RepsOrDuration: repsOrDuration, Done: done != 0, ExerciseSessionID: exerciseSessionId,
+					TimeStampAdded:     time.Unix(timeStampCompleted, 0),
+					TimeStampCompleted: time.Unix(timeStampCompleted, 0)}
 				exercise.Sets = append(exercise.Sets, set)
 			}
-			es.Exercises = append(es.Exercises, exercise)
+			session.Exercises = append(session.Exercises, exercise)
+
 		}
 
-		docs = append(docs, es)
+		sessions = append(sessions, session)
 
 	}
-	c.JSON(http.StatusOK, docs)
+
+	c.JSON(http.StatusOK, sessions)
 }
 
 func (db *DB) AddExerciseSession(c *gin.Context) {
