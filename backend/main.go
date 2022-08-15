@@ -127,16 +127,19 @@ func (db *DB) DoneChange(c *gin.Context) {
 		return
 	}
 	fmt.Println(user)
-	stmt, err = db.db.Prepare("update sets set done=? where id=?")
+	stmt, err = db.db.Prepare("update sets set done=?, TimestampCompleted=? where id=?")
 	checkErr(err)
 
-	var is_done bool
+	var is_done int
+	var timeStamp int64
 	if done {
-		is_done = true
+		is_done = 1
+		timeStamp = time.Now().Unix()
 	} else {
-		is_done = false
+		is_done = 0
+		timeStamp = 0
 	}
-	res, err := stmt.Exec(is_done, id_int)
+	res, err := stmt.Exec(is_done, timeStamp, id_int)
 	checkErr(err)
 
 	affect, err := res.RowsAffected()
@@ -291,7 +294,7 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 	checkErr(err)
 	rows, err := stmt.Query()
 	checkErr(err)
-	sessions := make(ExerciseSession, 0, 3)
+	sessions := make([]ExerciseSession, 0, 5)
 	for rows.Next() {
 
 		var complete int
@@ -325,11 +328,16 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 			exercise := Exercise{Name: name, IsTimeBased: isTimeBased != 0, Sets: make([]Set, 0, 5)}
 
 			/*
-						"ID"	INTEGER NOT NULL UNIQUE,
-				"Weight"	INTEGER NOT NULL,
-				"RepsOrDuration"	INTEGER NOT NULL,
-				"Done"	INTEGER NOT NULL,
-				"ExerciseID"	INTEGER NOT NULL,*/
+										"ID"	INTEGER NOT NULL UNIQUE,
+								"Weight"	INTEGER NOT NULL,
+								"RepsOrDuration"	INTEGER NOT NULL,
+								"Done"	INTEGER NOT NULL,
+								"ExerciseID"	INTEGER NOT NULL,
+								"TimestampAdded"	INTEGER NOT NULL,
+				            	"TimestampCompleted"	INTEGER NOT NULL,
+
+
+			*/
 
 			stmt, err := db.db.Prepare("SELECT ID, Weight,RepsOrDuration,Done,TimestampAdded,TimestampCompleted from Sets where ExerciseID=?")
 			checkErr(err)
@@ -367,6 +375,54 @@ func (db *DB) AddExerciseSession(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Bad data"})
 		return
 	}
+	/*
+		CREATE TABLE "ExerciseSessions" (
+			"ID"	INTEGER NOT NULL UNIQUE,
+			"Complete"	INTEGER NOT NULL,
+			"DateComplete"	INTEGER NOT NULL,
+			"User"	TEXT NOT NULL,
+			"Name"	TEXT NOT NULL,
+			PRIMARY KEY("ID" AUTOINCREMENT)
+		);*/
+
+	stmt, err := db.db.Prepare("INSERT INTO ExerciseSessions(Complete, DateComplete, User, Name) values(?,?,?,?)")
+	checkErr(err)
+	res, err := stmt.Exec(es.Completed, 0, "bob", es.Name)
+	checkErr(err)
+	exerciseSessionId, err := res.LastInsertId()
+	checkErr(err)
+
+	for _, e := range es.Exercises {
+
+		stmt, err := db.db.Prepare("INSERT INTO Exercises(Name, IsTimeBased, ExerciseSessionID) values(?,?,?)")
+		checkErr(err)
+		res, err := stmt.Exec(e.Name, e.IsTimeBased, exerciseSessionId)
+		checkErr(err)
+		exerciseId, err := res.LastInsertId()
+		checkErr(err)
+		for _, s := range e.Sets {
+
+			/*
+						"ID"	INTEGER NOT NULL UNIQUE,
+				"Weight"	INTEGER NOT NULL,
+				"RepsOrDuration"	INTEGER NOT NULL,
+				"Done"	INTEGER NOT NULL,
+				"ExerciseID"	INTEGER NOT NULL,
+				, TimestampAdded, TimestampComplete*/
+
+			stmt, err := db.db.Prepare("INSERT INTO Sets(Weight, RepsOrDuration, Done,ExerciseID, TimestampAdded, TimestampCompleted) values(?,?,?,?,?,?)")
+			checkErr(err)
+			_, err = stmt.Exec(s.Weight, s.RepsOrDuration, s.Done, exerciseId, time.Now().Unix(), 0)
+			checkErr(err)
+		}
+
+	}
+
+	stmt, err := db.db.Prepare("SELECT ID, Complete, DateComplete,Name from ExerciseSessions where complete=0")
+	checkErr(err)
+	rows, err := stmt.Query()
+	checkErr(err)
+
 	var exercise_session = db.firestore.Collection("ExerciseSessions").NewDoc()
 
 	ns := struct {
