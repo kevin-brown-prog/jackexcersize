@@ -14,7 +14,6 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
-	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -67,6 +66,25 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello, Web!\n"))
 }
 
+func Transact(db *sql.DB, txFunc func(*sql.Tx) error) (err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // re-throw panic after Rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; don't change it
+		} else {
+			err = tx.Commit() // err is nil; if Commit returns error update err
+		}
+	}()
+	err = txFunc(tx)
+	return err
+}
+
 func (db *DB) DoneChange(c *gin.Context) {
 	id := c.Param("id")
 	done, err := strconv.ParseBool(c.Param("done"))
@@ -80,55 +98,83 @@ func (db *DB) DoneChange(c *gin.Context) {
 		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
 		return
 	}
+	Transact(db.db, func(tx *sql.Tx) error {
+		return DoneMethod(tx, id_int, c, done)
 
-	stmt, err := db.db.Prepare("SELECT exerciseid FROM sets where id=?")
-	checkErr(err)
+	})
+
+}
+
+func DoneMethod(tx *sql.Tx, id_int int, c *gin.Context, done bool) error {
+	stmt, err := tx.Prepare("SELECT exerciseid FROM sets where id=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 
 	rows, err := stmt.Query(id_int)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	var exerciseId int
 	if rows.Next() {
 		err = rows.Scan(&exerciseId)
 		if err != nil {
-			checkErr(err)
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return err
 		}
 	} else {
 		c.JSON(400, gin.H{"message": "Unable to find set"})
-		return
+		return fmt.Errorf("No rows in sets found for %v", id_int)
 	}
 
-	stmt, err = db.db.Prepare("SELECT exerciseSessionId FROM Exercises where id=?")
-	checkErr(err)
+	stmt, err = tx.Prepare("SELECT exerciseSessionId FROM Exercises where id=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 
 	rows, err = stmt.Query(exerciseId)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	var exerciseSessionId int
 	if rows.Next() {
 		err = rows.Scan(&exerciseSessionId)
 		if err != nil {
-			checkErr(err)
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return err
 		}
 	} else {
-		c.JSON(400, gin.H{"message": "Unable to find set"})
-		return
+		c.JSON(400, gin.H{"message": "Unable to find exercise"})
+		return fmt.Errorf("No rows in Exercises found for %v", exerciseId)
 	}
 
-	stmt, err = db.db.Prepare("SELECT User from ExerciseSessions where id=?")
-	checkErr(err)
+	stmt, err = tx.Prepare("SELECT User from ExerciseSessions where id=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	rows, err = stmt.Query(exerciseSessionId)
 	var user string
 	if rows.Next() {
 		err = rows.Scan(&user)
 		if err != nil {
-			checkErr(err)
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return err
 		}
 	} else {
 		c.JSON(400, gin.H{"message": "Unable to find ExerciseSession"})
-		return
+		return fmt.Errorf("No rows in ExerciseSessions found for %v", exerciseSessionId)
 	}
 	fmt.Println(user)
-	stmt, err = db.db.Prepare("update sets set done=?, TimestampCompleted=? where id=?")
-	checkErr(err)
+	stmt, err = tx.Prepare("update sets set done=?, TimestampCompleted=? where id=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 
 	var is_done int
 	var timeStamp int64
@@ -140,23 +186,33 @@ func (db *DB) DoneChange(c *gin.Context) {
 		timeStamp = 0
 	}
 	res, err := stmt.Exec(is_done, timeStamp, id_int)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 
 	affect, err := res.RowsAffected()
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	if affect != 1 {
 		panic("not able to update set")
 	}
 
-	stmt, err = db.db.Prepare("SELECT done from sets where exerciseid=?")
-	checkErr(err)
+	stmt, err = tx.Prepare("SELECT done from sets where exerciseid=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	rows, err = stmt.Query(exerciseId)
 	complete := 1
 	for rows.Next() {
 		var done bool
 		err = rows.Scan(&done)
 		if err != nil {
-			checkErr(err)
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return err
 		}
 		if done {
 			complete = 0
@@ -164,60 +220,21 @@ func (db *DB) DoneChange(c *gin.Context) {
 		}
 	}
 
-	stmt, err = db.db.Prepare("Update ExerciseSessions set complete=? where id=?")
-	checkErr(err)
+	stmt, err = tx.Prepare("Update ExerciseSessions set complete=? where id=?")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	res, err = stmt.Exec(complete, exerciseSessionId)
 	affect, err = res.RowsAffected()
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	if affect != 1 {
 		panic("not able to update set")
 	}
-
-	/*
-
-		set := db.firestore.Collection("Sets").Doc(id)
-		setData, err := set.Get(context.Background())
-		if err != nil {
-			c.JSON(400, gin.H{"message": "Unable to find document"})
-			return
-		}
-		exercise_session_id := setData.Data()["exercise_session_id"].(string)
-		set.Update(context.Background(),
-			[]firestore.Update{
-				{
-					Path:  "done",
-					Value: done,
-				},
-			})
-
-		query := db.firestore.Collection("Sets").Where("exercise_session_id", "==", exercise_session_id)
-		iter := query.Documents(context.Background())
-		complete := true
-		for {
-			setDoc, err := iter.Next()
-			if err == iterator.Done {
-				break
-			}
-			setLocal := Set{}
-			setDoc.DataTo(&setLocal)
-			if !setLocal.Done {
-				complete = false
-				break
-			}
-		}
-		if complete {
-			db.firestore.Collection(("ExerciseSessions")).Doc(exercise_session_id).Update(context.Background(),
-				[]firestore.Update{
-					{
-						Path:  "completed",
-						Value: complete,
-					},
-				})
-
-		}*/
-
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
-
 }
 func (db *DB) RepsChange(c *gin.Context) {
 	id := c.Param("id")
@@ -232,12 +249,21 @@ func (db *DB) RepsChange(c *gin.Context) {
 		return
 	}
 	stmt, err := db.db.Prepare("update sets set repsorduration=? where id=?")
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 
 	res, err := stmt.Exec(reps, id_int)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 	affect, err := res.RowsAffected()
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 	if affect != 1 {
 		c.JSON(400, gin.H{"message": fmt.Sprintf("Unable to find set")})
 		return
@@ -267,33 +293,64 @@ func (db *DB) WeightChanged(c *gin.Context) {
 		return
 	}
 	stmt, err := db.db.Prepare("update sets set weight=? where id=?")
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 
 	res, err := stmt.Exec(weight, id_int)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 	affect, err := res.RowsAffected()
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return
+	}
 	if affect != 1 {
 		c.JSON(400, gin.H{"message": fmt.Sprintf("Unable to find set")})
 		return
 	}
-	/*
-		db.firestore.Collection("Sets").Doc(id).Update(context.Background(),
-			[]firestore.Update{
-				{
-					Path:  "weight",
-					Value: weight,
-				},
-			})*/
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
 }
 
 func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 
-	stmt, err := db.db.Prepare("SELECT ID, Complete, DateComplete,Name from ExerciseSessions where complete=0")
-	checkErr(err)
+	/*		"ID"	INTEGER NOT NULL UNIQUE,
+			"Name"	TEXT NOT NULL,
+			"IsTimeBased"	INTEGER NOT NULL,
+			"ExerciseSessionID"	INTEGER NOT NULL,*/
+	/*
+								"ID"	INTEGER NOT NULL UNIQUE,
+						"Weight"	INTEGER NOT NULL,
+						"RepsOrDuration"	INTEGER NOT NULL,
+						"Done"	INTEGER NOT NULL,
+						"ExerciseID"	INTEGER NOT NULL,
+						"TimestampAdded"	INTEGER NOT NULL,
+		            	"TimestampCompleted"	INTEGER NOT NULL,
+
+
+	*/
+	Transact(db.db, func(tx *sql.Tx) error {
+		return GetSessionsNotCompleteImp(tx, c)
+		//return DoneMethod(tx, id_int, c, done)
+
+	})
+
+}
+
+func GetSessionsNotCompleteImp(tx *sql.Tx, c *gin.Context) error {
+	stmt, err := tx.Prepare("SELECT ID, Complete, DateComplete,Name from ExerciseSessions where complete=0")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	rows, err := stmt.Query()
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return err
+	}
 	sessions := make([]ExerciseSession, 0, 5)
 	for rows.Next() {
 
@@ -303,7 +360,8 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 		var exerciseSessionId int
 		err = rows.Scan(&exerciseSessionId, &complete, &dateComplete, &name)
 		if err != nil {
-			checkErr(err)
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return err
 		}
 		session := ExerciseSession{Name: name,
 			Date:      time.Unix(dateComplete, 0),
@@ -311,38 +369,32 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 			Exercises: make([]Exercise, 0, 5),
 		}
 
-		stmt, err := db.db.Prepare("SELECT ID, Name,IsTimeBased from Exercises where ExerciseSessionID=?")
+		stmt, err := tx.Prepare("SELECT ID, Name,IsTimeBased from Exercises where ExerciseSessionID=?")
 		checkErr(err)
 		rowsExercises, err := stmt.Query(exerciseSessionId)
 		checkErr(err)
 		for rowsExercises.Next() {
-			/*		"ID"	INTEGER NOT NULL UNIQUE,
-					"Name"	TEXT NOT NULL,
-					"IsTimeBased"	INTEGER NOT NULL,
-					"ExerciseSessionID"	INTEGER NOT NULL,*/
+
 			var exerciseId int
 			var name string
 			var isTimeBased int
 			err = rowsExercises.Scan(&exerciseId, &name, &isTimeBased)
-			checkErr(err)
+			if err != nil {
+				c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+				return err
+			}
 			exercise := Exercise{Name: name, IsTimeBased: isTimeBased != 0, Sets: make([]Set, 0, 5)}
 
-			/*
-										"ID"	INTEGER NOT NULL UNIQUE,
-								"Weight"	INTEGER NOT NULL,
-								"RepsOrDuration"	INTEGER NOT NULL,
-								"Done"	INTEGER NOT NULL,
-								"ExerciseID"	INTEGER NOT NULL,
-								"TimestampAdded"	INTEGER NOT NULL,
-				            	"TimestampCompleted"	INTEGER NOT NULL,
-
-
-			*/
-
-			stmt, err := db.db.Prepare("SELECT ID, Weight,RepsOrDuration,Done,TimestampAdded,TimestampCompleted from Sets where ExerciseID=?")
-			checkErr(err)
+			stmt, err := tx.Prepare("SELECT ID, Weight,RepsOrDuration,Done,TimestampAdded,TimestampCompleted from Sets where ExerciseID=?")
+			if err != nil {
+				c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+				return err
+			}
 			rowsSets, err := stmt.Query(exerciseId)
-			checkErr(err)
+			if err != nil {
+				c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+				return err
+			}
 			for rowsSets.Next() {
 				var set_id int
 				var weight int
@@ -351,7 +403,10 @@ func (db *DB) GetSessionsNotComplete(c *gin.Context) {
 				var timeStampCompleted int64
 				var timeStampAdded int64
 				err = rowsSets.Scan(&set_id, &weight, &repsOrDuration, &done, &timeStampCompleted, &timeStampAdded)
-				checkErr(err)
+				if err != nil {
+					c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+					return err
+				}
 				set := Set{SetID: set_id, RepsOrDuration: repsOrDuration, Done: done != 0, ExerciseSessionID: exerciseSessionId,
 					TimeStampAdded:     time.Unix(timeStampCompleted, 0),
 					TimeStampCompleted: time.Unix(timeStampCompleted, 0)}
@@ -385,82 +440,116 @@ func (db *DB) AddExerciseSession(c *gin.Context) {
 			PRIMARY KEY("ID" AUTOINCREMENT)
 		);*/
 
-	stmt, err := db.db.Prepare("INSERT INTO ExerciseSessions(Complete, DateComplete, User, Name) values(?,?,?,?)")
-	checkErr(err)
+	/*
+				"ID"	INTEGER NOT NULL UNIQUE,
+		"Weight"	INTEGER NOT NULL,
+		"RepsOrDuration"	INTEGER NOT NULL,
+		"Done"	INTEGER NOT NULL,
+		"ExerciseID"	INTEGER NOT NULL,
+		, TimestampAdded, TimestampComplete*/
+	var exerciseSessionId int
+	Transact(db.db, func(tx *sql.Tx) error {
+		var err2 error
+		exerciseSessionId, err2 = AddExerciseSessionTransaction(tx, c, es)
+		return err2
+	})
+
+	c.JSON(http.StatusOK, gin.H{"ID": exerciseSessionId})
+}
+
+func AddExerciseSessionTransaction(tx *sql.Tx, c *gin.Context, es ExerciseSession) (int, error) {
+	stmt, err := tx.Prepare("INSERT INTO ExerciseSessions(Complete, DateComplete, User, Name) values(?,?,?,?)")
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return -1, err
+	}
 	res, err := stmt.Exec(es.Completed, 0, "bob", es.Name)
-	checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return -1, err
+	}
 	exerciseSessionId, err := res.LastInsertId()
-	es.
-		checkErr(err)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+		return -1, err
+	}
 
 	for _, e := range es.Exercises {
 
-		stmt, err := db.db.Prepare("INSERT INTO Exercises(Name, IsTimeBased, ExerciseSessionID) values(?,?,?)")
-		checkErr(err)
+		stmt, err := tx.Prepare("INSERT INTO Exercises(Name, IsTimeBased, ExerciseSessionID) values(?,?,?)")
+		if err != nil {
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return -1, err
+		}
 		res, err := stmt.Exec(e.Name, e.IsTimeBased, exerciseSessionId)
-		checkErr(err)
+		if err != nil {
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return -1, err
+		}
 		exerciseId, err := res.LastInsertId()
-		checkErr(err)
+		if err != nil {
+			c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+			return -1, err
+		}
 		for _, s := range e.Sets {
 
-			/*
-						"ID"	INTEGER NOT NULL UNIQUE,
-				"Weight"	INTEGER NOT NULL,
-				"RepsOrDuration"	INTEGER NOT NULL,
-				"Done"	INTEGER NOT NULL,
-				"ExerciseID"	INTEGER NOT NULL,
-				, TimestampAdded, TimestampComplete*/
-
-			stmt, err := db.db.Prepare("INSERT INTO Sets(Weight, RepsOrDuration, Done,ExerciseID, TimestampAdded, TimestampCompleted) values(?,?,?,?,?,?)")
-			checkErr(err)
+			stmt, err := tx.Prepare("INSERT INTO Sets(Weight, RepsOrDuration, Done,ExerciseID, TimestampAdded, TimestampCompleted) values(?,?,?,?,?,?)")
+			if err != nil {
+				c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+				return -1, err
+			}
 			_, err = stmt.Exec(s.Weight, s.RepsOrDuration, s.Done, exerciseId, time.Now().Unix(), 0)
-			checkErr(err)
+			if err != nil {
+				c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
+				return -1, err
+			}
 		}
 
 	}
-
-	c.JSON(http.StatusOK, gin.H{"ID": exerciseSessionId})
+	return exerciseSessionId, nil
 }
 
 func (db *DB) DeleteExerciseSession(c *gin.Context) {
 
 	id := c.Param("id")
-	ref := db.firestore.Collection("ExerciseSessions").Doc(id)
-	if ref == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "id not found when deleting"})
+
+	id_int, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(400, gin.H{"message": fmt.Sprintf("%v", err)})
 		return
 	}
-	iter := ref.Collection("Exercises").Documents(context.Background())
 
-	excercise_delete_batch := db.firestore.Batch()
-
-	for {
-		exercise, err := iter.Next()
-
-		if err == iterator.Done {
-			break
+	stmt, err := db.db.Prepare("SELECT ID from Exercise where ExerciseSessionID=?")
+	checkErr(err)
+	rows, err := stmt.Query(id_int)
+	exerciseIds := make([]int, 0, 5)
+	if rows.Next() {
+		var exerciseId int
+		err = rows.Scan(&exerciseId)
+		if err != nil {
+			checkErr(err)
 		}
-		sets_iter := exercise.Ref.Collection("Sets").Documents(context.Background())
-		for {
-			set, err := sets_iter.Next()
-			if err == iterator.Done {
-				break
-			}
-			doc_map := set.Data()
-			set_id, ok := doc_map["ID"].(string)
-			if !ok {
-				c.JSON(http.StatusNotFound, gin.H{"message": "id not found in sets when deleting"})
-				return
-			}
+		exerciseIds = append(exerciseIds, exerciseId)
+		deleteStmt, err := db.db.Prepare("Delete from Sets where ExerciseID=?")
+		checkErr(err)
+		_, err = deleteStmt.Exec(id_int)
+		checkErr(err)
 
-			excercise_delete_batch.Delete(db.firestore.Collection("Sets").Doc(set_id))
-
-		}
-
-		excercise_delete_batch.Delete(exercise.Ref)
-
+	} else {
+		c.JSON(400, gin.H{"message": "Unable to find ExerciseSession"})
+		return
 	}
-	excercise_delete_batch.Commit(context.Background())
+	for _, id := range exerciseIds {
+		deleteStmt, err := db.db.Prepare("Delete from Exercises where ID=?")
+		checkErr(err)
+		_, err = deleteStmt.Exec(id)
+		checkErr(err)
+	}
+	deleteStmt, err := db.db.Prepare("Delete from ExerciseSessions where ID=?")
+	checkErr(err)
+	_, err = deleteStmt.Exec(id_int)
+	checkErr(err)
+
 	//mapbody:=make(map[string]string)
 
 	//  json.Unmarshal(c.Request.Body,&mapbody)
