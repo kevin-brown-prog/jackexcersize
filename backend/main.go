@@ -2,10 +2,8 @@ package main
 
 //https://www.digitalocean.com/community/tutorials/debugging-go-code-with-visual-studio-code
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,7 +12,6 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
-	"google.golang.org/api/option"
 )
 
 type DB struct {
@@ -30,19 +27,9 @@ func checkErr(err error) {
 }
 
 func (db *DB) New() {
-	ctx := context.Background()
-	sa := option.WithCredentialsFile("jackworkout.json")
-	var err error
-	db.app, err = firebase.NewApp(ctx, nil, sa)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	db.firestore, err = db.app.Firestore(ctx)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	db.db, err = sql.Open("sqlite3", "./foo.db")
+	var err error
+	db.db, err = sql.Open("sqlite3", "./workout.db")
 	checkErr(err)
 
 	//excercise_sessions := db.firestore.Collection("ExcerciseSessions").ID
@@ -235,6 +222,7 @@ func DoneMethod(tx *sql.Tx, id_int int, c *gin.Context, done bool) error {
 		panic("not able to update set")
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "OK"})
+	return nil
 }
 func (db *DB) RepsChange(c *gin.Context) {
 	id := c.Param("id")
@@ -421,6 +409,7 @@ func GetSessionsNotCompleteImp(tx *sql.Tx, c *gin.Context) error {
 	}
 
 	c.JSON(http.StatusOK, sessions)
+	return nil
 }
 
 func (db *DB) AddExerciseSession(c *gin.Context) {
@@ -506,7 +495,7 @@ func AddExerciseSessionTransaction(tx *sql.Tx, c *gin.Context, es ExerciseSessio
 		}
 
 	}
-	return exerciseSessionId, nil
+	return int(exerciseSessionId), nil
 }
 
 func (db *DB) DeleteExerciseSession(c *gin.Context) {
